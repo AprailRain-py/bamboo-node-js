@@ -1,3 +1,4 @@
+import { Sequelize } from 'sequelize';
 import Event from './entities/event.entity';
 import Workshop from './entities/workshop.entity';
 
@@ -174,6 +175,26 @@ export class EventsService {
      */
   async getFutureEventWithWorkshops() {
 
+    /**
+     * Time constraint, I am writing raw query, though same can be done using Sequelize Model
+     */
+    const sqlQuery = `WITH CTE AS (
+			SELECT DISTINCT eventId, MiN(StartDate) As min_start
+			FROM workshop
+			)
+    SELECT  w.*,t.*
+    FROM event t
+    INNER JOIN CTE c
+      ON t.eventid = c.eventId
+      AND t.startDate > c.min_start
+    INNER JOIN workshop w
+      ON w.eventId = c.id`
+    
+    const futureEvents = await Sequelize.query(sqlQuery, {
+      rawQuery:true
+    })
+
+    return futureEvents
    
     throw new Error('TODO task 2');
   }
