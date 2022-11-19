@@ -1,4 +1,5 @@
 import Event from './entities/event.entity';
+import Workshop from './entities/workshop.entity';
 
 
 export class EventsService {
@@ -85,7 +86,24 @@ export class EventsService {
      */
 
   async getEventsWithWorkshops() {
-    throw new Error('TODO task 1');
+
+    /**
+     * This took majority of time. Sorry
+     * I dont think this is best implementation, it should be included when we are defining the table structure and DB design, but for solution I have put it here 
+     */
+    
+    Event.hasMany(Workshop,{as:'workshops'})
+
+    const eventsWorkshop = await Event.findAll({
+      include: [{
+        model: Workshop,
+        as:'workshops',
+        required:true
+      }]
+    })
+
+    return eventsWorkshop
+
   }
 
   /* TODO: complete getFutureEventWithWorkshops so that it returns events with workshops, that have not yet started
@@ -155,6 +173,8 @@ export class EventsService {
     ```
      */
   async getFutureEventWithWorkshops() {
+
+   
     throw new Error('TODO task 2');
   }
 }
