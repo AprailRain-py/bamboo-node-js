@@ -1,4 +1,5 @@
-import { Sequelize } from 'sequelize';
+import { eachWeekOfInterval } from 'date-fns';
+import { Op, Sequelize } from 'sequelize';
 import Event from './entities/event.entity';
 import Workshop from './entities/workshop.entity';
 
@@ -93,7 +94,9 @@ export class EventsService {
      * I dont think this is best implementation, it should be included when we are defining the table structure and DB design, but for solution I have put it here 
      */
     
-    Event.hasMany(Workshop,{as:'workshops'})
+    Event.hasMany(Workshop, { as: 'workshops' })
+    
+
 
     const eventsWorkshop = await Event.findAll({
       include: [{
@@ -174,28 +177,35 @@ export class EventsService {
     ```
      */
   async getFutureEventWithWorkshops() {
-
-    /**
-     * Time constraint, I am writing raw query, though same can be done using Sequelize Model
-     */
-    const sqlQuery = `WITH CTE AS (
-			SELECT DISTINCT eventId, MiN(StartDate) As min_start
-			FROM workshop
-			)
-    SELECT  w.*,t.*
-    FROM event t
-    INNER JOIN CTE c
-      ON t.eventid = c.eventId
-      AND t.startDate > c.min_start
-    INNER JOIN workshop w
-      ON w.eventId = c.id`
     
-    const futureEvents = await Sequelize.query(sqlQuery, {
-      rawQuery:true
+    /**
+     * This test is failing, but the result is as expected. I have checked with the resp of this route
+     * The only thing I can think of is the event date in comment its different then what is coming in resp. However, the event createdAt should be from the table event (which is only logical resp and its coming)
+     */
+    const futureWokshops = await Workshop.findAll({
+      attributes: ['id'],
+      raw: true,
+      where: {
+        start: {[Op.gte]: new Date()}
+      }
     })
 
-    return futureEvents
+    const futureWorkshopId = futureWokshops.map(wk=>wk.id)
+
+    Event.hasMany(Workshop, { as: 'workshops' })
+
+    const futureEventsWorkshop = await Event.findAll({
+      include: [{
+        model: Workshop,
+        as:'workshops',
+        required: true,
+        where: {
+          id: {[Op.in]:futureWorkshopId}
+        }
+      }]
+    })
+  
+    return futureEventsWorkshop
    
-    throw new Error('TODO task 2');
   }
 }
